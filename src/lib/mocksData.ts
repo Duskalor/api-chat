@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
 import { faker } from '@faker-js/faker';
-
-const prisma = new PrismaClient();
+import { prisma } from 'prisma';
 
 export async function generateMockData() {
   // Clear existing data to start fresh
@@ -26,10 +24,11 @@ export async function generateMockData() {
   // Generate Chats (including some group chats)
   const chats = await Promise.all(
     Array.from({ length: 15 }).map(async () => {
+      const is = faker.datatype.boolean();
       return prisma.chat.create({
         data: {
-          name: faker.datatype.boolean() ? faker.company.name() : null,
-          isGroup: faker.datatype.boolean(),
+          name: is ? faker.company.name() : null,
+          isGroup: is,
         },
       });
     })
@@ -38,7 +37,10 @@ export async function generateMockData() {
   // Create UserChat relationships
   for (const chat of chats) {
     // Randomly select 2-5 users for each chat
-    const chatUsers = faker.helpers.arrayElements(users, { min: 2, max: 5 });
+
+    const chatUsers = chat.isGroup
+      ? faker.helpers.arrayElements(users, { min: 3, max: 5 })
+      : faker.helpers.arrayElements(users, 1);
 
     await Promise.all(
       chatUsers.map((user) =>
