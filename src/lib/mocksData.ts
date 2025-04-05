@@ -34,13 +34,23 @@ export async function generateMockData() {
     })
   );
 
-  // Create UserChat relationships
   for (const chat of chats) {
-    // Randomly select 2-5 users for each chat
+    let chatUsers;
 
-    const chatUsers = chat.isGroup
-      ? faker.helpers.arrayElements(users, { min: 3, max: 5 })
-      : faker.helpers.arrayElements(users, 1);
+    if (chat.isGroup) {
+      // Si es grupo, selecciona entre 3 y 5 usuarios
+      chatUsers = faker.helpers.arrayElements(users, { min: 3, max: 5 });
+    } else {
+      // Si es un chat individual, selecciona **dos** usuarios
+      const user1 = faker.helpers.arrayElement(users);
+      let user2;
+
+      do {
+        user2 = faker.helpers.arrayElement(users);
+      } while (user2.id === user1.id); // Asegurar que sean distintos
+
+      chatUsers = [user1, user2];
+    }
 
     await Promise.all(
       chatUsers.map((user) =>
@@ -79,6 +89,4 @@ export async function generateMockData() {
       )
     );
   }
-
-  console.log('Mock data generation complete!');
 }

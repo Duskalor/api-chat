@@ -8,7 +8,6 @@ export const AllChats = async (userId: string) => {
         chat: {
           include: {
             messages: {
-              take: 1,
               orderBy: { createAt: 'desc' },
             },
             user: {
@@ -24,19 +23,24 @@ export const AllChats = async (userId: string) => {
     return userChats.map((userChat) => {
       const chat = userChat.chat;
 
-      // Para chats no grupales, obtener el otro participante
+      // Obtener todos los usuarios en el chat
       const chatUsers = chat.user.map((u) => u.user);
-      const otherUsers = chatUsers.filter((u) => u.id !== userId);
+
+      // Si es un grupo, incluir todos los usuarios, si no, solo el otro participante
+      const participants = chat.isGroup
+        ? chatUsers
+        : chatUsers.filter((u) => u.id !== userId);
 
       return {
         id: chat.id,
-        // Si no es grupo, usar nombre del otro usuario
         name: chat.isGroup
-          ? chat.name || 'Grupo sin nombre'
-          : otherUsers[0]?.name || 'Chat sin nombre',
+          ? chat.name
+          : participants.length > 0
+          ? participants[0]?.name
+          : 'Desconocido',
         isGroup: chat.isGroup,
-        // Si no es grupo, solo mostrar el otro usuario
-        participants: otherUsers,
+        participants, // Ahora contiene los participantes correctamente
+        messages: chat.messages,
         lastMessage: chat.messages[0]
           ? {
               text: chat.messages[0].text,
@@ -47,7 +51,7 @@ export const AllChats = async (userId: string) => {
       };
     });
   } catch (_error) {
-    console.log('error');
+    console.log('Error:', _error);
     return [];
   }
 };
